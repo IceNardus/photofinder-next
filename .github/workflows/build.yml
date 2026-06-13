@@ -16,6 +16,13 @@ jobs:
         with:
           node-version: '20'
       - uses: dtolnay/rust-toolchain@stable
+      - name: Download models
+        run: |
+          mkdir -p src-tauri/resources/models
+          if [ ! -f src-tauri/resources/models/mobileclip_s2.onnx ]; then
+            curl -L "${{ secrets.MODELS_URL }}" -o /tmp/models.tar.gz || echo "Models download skipped"
+            tar -xzf /tmp/models.tar.gz -C src-tauri/resources/ 2>/dev/null || echo "Extraction skipped"
+          fi
       - name: Install dependencies
         run: |
           brew install pkg-config faudio
@@ -39,6 +46,13 @@ jobs:
         with:
           node-version: '20'
       - uses: dtolnay/rust-toolchain@stable
+      - name: Download models
+        run: |
+          mkdir -p src-tauri/resources\models
+          if not exist src-tauri\resources\models\mobileclip_s2.onnx (
+            curl -L "%MODELS_URL%" -o models.tar.gz
+            tar -xzf models.tar.gz -C src-tauri\resources\ || exit 0
+          )
       - name: Install dependencies
         run: |
           npm install
