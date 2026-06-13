@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PhotoFinder Next - 照片搜索</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          <span>PhotoFinder</span>
+        </div>
+        <nav class="nav">
+          <button class="nav-btn active" data-page="scan">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            扫描
+          </button>
+          <button class="nav-btn" data-page="person">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            人脸搜索
+          </button>
+          <button class="nav-btn" data-page="object">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+            类别搜索
+          </button>
+        </nav>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-value" id="stat-images">0</span>
+            <span class="stat-label">图片</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="stat-faces">0</span>
+            <span class="stat-label">人脸</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="stat-objects">0</span>
+            <span class="stat-label">物体</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content">
+        <!-- 扫描页面 -->
+        <section id="page-scan" class="page active">
+          <h1>图片扫描</h1>
+          <div class="scan-controls">
+            <button id="btn-add-folder" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                <line x1="12" y1="11" x2="12" y2="17"/>
+                <line x1="9" y1="14" x2="15" y2="14"/>
+              </svg>
+              添加文件夹
+            </button>
+            <button id="btn-start-scan" class="btn btn-success" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              开始扫描
+            </button>
+            <button id="btn-stop-scan" class="btn btn-danger" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="6" width="12" height="12"/>
+              </svg>
+              停止
+            </button>
+            <button id="btn-clear-database" class="btn btn-danger-outline">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+              </svg>
+              清空数据库
+            </button>
+          </div>
+
+          <div class="folder-list" id="folder-list">
+            <div class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+              </svg>
+              <p>尚未添加任何文件夹</p>
+              <p class="hint">点击"添加文件夹"开始扫描照片</p>
+            </div>
+          </div>
+
+          <div class="progress-container" id="progress-container" style="display: none;">
+            <div class="progress-header">
+              <span class="progress-title">扫描进度</span>
+              <span class="progress-count" id="progress-count">0 / 0</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-stats">
+              <span>已处理图片: <span id="progress-images">0</span></span>
+              <span>待处理任务: <span id="progress-tasks">0</span></span>
+            </div>
+          </div>
+
+          <div class="scan-log-container">
+            <div class="scan-log-header">
+              <span>扫描日志</span>
+              <button id="btn-clear-log" class="btn-icon-small">清除</button>
+            </div>
+            <div class="scan-log" id="scan-log"></div>
+          </div>
+        </section>
+
+        <!-- 人脸搜索页面 -->
+        <section id="page-person" class="page">
+          <h1>人脸搜索</h1>
+          <div class="search-upload">
+            <div class="upload-zone" id="person-upload">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+              <p>拖拽参考图片或点击上传</p>
+              <input type="file" id="person-file-input" accept="image/*" hidden />
+            </div>
+            <button id="btn-person-search" class="btn btn-primary" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+              </svg>
+              搜索
+            </button>
+          </div>
+          <div class="preview-container" id="person-preview" style="display: none;">
+            <img id="person-preview-img" alt="参考图片" />
+            <button id="btn-person-clear" class="btn-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <!-- Export Controls -->
+          <div class="export-controls" id="person-export-controls" style="display: none;">
+            <div class="export-actions">
+              <label class="checkbox-label">
+                <input type="checkbox" id="person-select-all" />
+                <span>全选</span>
+              </label>
+              <span class="selected-count" id="person-selected-count">已选择: 0</span>
+            </div>
+            <div class="export-buttons">
+              <button id="btn-person-export" class="btn btn-primary" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                导出选中 (<span id="export-count">0</span>)
+              </button>
+              <button id="btn-choose-export-dir" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                </svg>
+                选择导出位置
+              </button>
+            </div>
+            <div class="export-dir-display">
+              <span id="export-dir-path">未选择导出目录</span>
+            </div>
+          </div>
+          <div class="results-grid" id="person-results"></div>
+          <div class="pagination" id="person-pagination"></div>
+        </section>
+
+        <!-- 类别搜索页面 (CategorySearch: MobileCLIP + LightGlue) -->
+        <section id="page-object" class="page">
+          <h1>类别搜索</h1>
+          <p style="color: var(--text-secondary); margin-bottom: 16px;">
+            用户查询图 → ROI提取 → MobileCLIP embedding → HNSW Top-N → SuperPoint+LightGlue精排 → 融合评分
+          </p>
+          <div class="search-upload">
+            <div class="upload-zone" id="object-upload">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+              <p>拖拽查询图片或点击上传</p>
+              <input type="file" id="object-file-input" accept="image/*" hidden />
+            </div>
+          </div>
+          <div class="preview-container" id="object-preview" style="display: none; flex-direction: column; align-items: center;">
+            <img id="object-preview-img" alt="查询图片" style="max-width: 100%; max-height: 60vh; display: block;" />
+            <div id="object-rois-info" style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;"></div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+              <button id="btn-object-search" class="btn btn-primary" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                搜索相似物品
+              </button>
+              <button id="btn-object-clear" class="btn btn-secondary">清除</button>
+            </div>
+          </div>
+          <div class="export-controls" id="object-export-controls" style="display: none;">
+            <label>
+              <input type="checkbox" id="object-select-all" />
+              全选
+            </label>
+            <span id="object-export-count">已选择: 0</span>
+            <button id="btn-object-export" class="btn btn-primary" disabled>
+              导出选中图片
+            </button>
+            <button id="btn-object-choose-dir" class="btn btn-secondary">
+              选择导出目录
+            </button>
+            <span id="object-export-dir-path">未选择导出目录</span>
+          </div>
+          <div class="results-grid" id="object-results"></div>
+          <div class="pagination" id="object-pagination"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Image Library Modal for Crop Selection -->
+    <div id="library-modal" class="modal" style="display: none;">
+      <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+          <h2>选择图片并裁剪区域</h2>
+          <button id="btn-close-library-modal" class="btn-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="library-grid" id="library-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crop Modal -->
+    <div id="crop-modal" class="modal" style="display: none;">
+      <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+        <div class="modal-header">
+          <h2>画框选择区域</h2>
+          <button id="btn-close-crop-modal" class="btn-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body" style="display: flex; flex-direction: column; align-items: center;">
+          <div id="crop-container" style="position: relative; display: inline-block;">
+            <img id="crop-preview-img" alt="裁剪预览" style="max-width: 100%; max-height: 70vh;" />
+            <div id="crop-box" style="position: absolute; border: 2px dashed var(--accent); cursor: move; display: none;"></div>
+          </div>
+          <div class="crop-hint" style="margin-top: 8px; color: var(--text-secondary); font-size: 12px;">
+            按住鼠标拖动画出选区
+          </div>
+          <div style="margin-top: 16px; display: flex; gap: 8px;">
+            <button id="btn-crop-search" class="btn btn-primary" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+              </svg>
+              搜索
+            </button>
+            <button id="btn-crop-clear" class="btn btn-secondary">清除选区</button>
+           <button id="btn-crop-back" class="btn btn-secondary">重新选择图片</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

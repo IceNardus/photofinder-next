@@ -1,0 +1,17 @@
+# Ground Truth for Recall Testing
+# Format: query_filename:
+#   relevant:
+#     - database_image_1.jpg
+#     - database_image_2.jpg
+#   irrelevant: (optional)
+#     - unrelated_image.jpg
+
+# Example entries (uncomment to use):
+# query_001.jpg:
+#   relevant:
+#     - img_001.jpg
+#     - img_002.jpg
+#
+# query_002.jpg:
+#   relevant:
+#     - img_003.jpg
