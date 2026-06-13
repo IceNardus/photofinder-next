@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Models (too large for GitHub, downloaded during build)
+src-tauri/resources/models/*.onnx
+src-tauri/resources/models/*.onnx.data
