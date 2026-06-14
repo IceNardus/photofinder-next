@@ -20,8 +20,10 @@ jobs:
         run: |
           mkdir -p src-tauri/resources/models
           if [ ! -f src-tauri/resources/models/mobileclip_s2.onnx ]; then
-            curl -L "${{ secrets.MODELS_URL }}" -o /tmp/models.tar.gz || echo "Models download skipped"
-            tar -xzf /tmp/models.tar.gz -C src-tauri/resources/ 2>/dev/null || echo "Extraction skipped"
+            echo "Downloading models from release..."
+            curl -L -o /tmp/models.tar.gz "https://github.com/IceNardus/photofinder-next/releases/download/v0.1.0-models/models.tar.gz"
+            tar -xzf /tmp/models.tar.gz -C src-tauri/resources/
+            echo "Models downloaded successfully"
           fi
       - name: Install dependencies
         run: |
@@ -48,10 +50,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Download models
         run: |
-          mkdir -p src-tauri/resources\models
+          mkdir src-tauri\resources\models
           if not exist src-tauri\resources\models\mobileclip_s2.onnx (
-            curl -L "%MODELS_URL%" -o models.tar.gz
-            tar -xzf models.tar.gz -C src-tauri\resources\ || exit 0
+            curl -L -o models.tar.gz https://github.com/IceNardus/photofinder-next/releases/download/v0.1.0-models/models.tar.gz
+            tar -xzf models.tar.gz -C src-tauri\resources\
           )
       - name: Install dependencies
         run: |
