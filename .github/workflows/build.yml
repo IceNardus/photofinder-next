@@ -38,8 +38,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: src-tauri/target/release/bundle/dmg/*.dmg
-          path: src-tauri/target/release/bundle/macos/*.app
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app
 
   build-windows:
     runs-on: windows-latest
@@ -50,12 +51,15 @@ jobs:
           node-version: '20'
       - uses: dtolnay/rust-toolchain@stable
       - name: Download models
+        shell: bash
         run: |
-          mkdir src-tauri\resources\models
-          if not exist src-tauri\resources\models\mobileclip_s2.onnx (
-            curl -L -o models.tar.gz https://github.com/IceNardus/photofinder-next/releases/download/v0.1.0-models/models.tar.gz
-            tar -xzf models.tar.gz -C src-tauri\resources\
-          )
+          mkdir -p src-tauri/resources/models
+          if [ ! -f src-tauri/resources/models/mobileclip_s2.onnx ]; then
+            echo "Downloading models from release..."
+            curl -L -o /tmp/models.tar.gz "https://github.com/IceNardus/photofinder-next/releases/download/v0.1.0-models/models.tar.gz"
+            tar -xzf /tmp/models.tar.gz -C src-tauri/resources/
+            echo "Models downloaded successfully"
+          fi
       - name: Install dependencies
         run: |
           npm install
@@ -67,5 +71,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: src-tauri/target/release/bundle/nsis/*.exe
-          path: src-tauri/target/release/bundle/msi/*.msi
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
