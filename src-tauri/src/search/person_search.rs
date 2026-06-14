@@ -24,21 +24,8 @@ pub struct PersonSearch {
 
 impl PersonSearch {
     fn find_models_dir(data_dir: &Path) -> std::path::PathBuf {
-        let candidates = vec![
-            data_dir.join("resources").join("models"),
-            std::path::PathBuf::from("resources/models"),
-            std::path::PathBuf::from("/Applications/PhotoFinder Next.app/Contents/Resources/models"),
-            std::path::PathBuf::from("/Users/mac/Library/Caches/PhotoFinder/models"),
-            std::path::PathBuf::from("/Users/mac/ai-project/photofinder-ai/src-tauri/resources/models"),
-        ];
-
-        for candidate in &candidates {
-            if candidate.exists() && candidate.join("scrfd_500m_bnkps.onnx").exists() {
-                return candidate.clone();
-            }
-        }
-
-        data_dir.join("resources").join("models")
+        crate::core::models::find_models_dir()
+            .unwrap_or_else(|| data_dir.join("resources").join("models"))
     }
 
     pub fn new(db: Arc<Database>, data_dir: &Path) -> Result<Self> {

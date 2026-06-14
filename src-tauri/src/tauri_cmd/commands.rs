@@ -606,22 +606,7 @@ pub async fn analyze_face_alignment(image_path: String) -> Result<FaceAlignmentA
     use crate::ai::face::{FaceDetector, FaceAligner, FaceAlignmentConfig, scan_alignment_scales};
 
     let find_model = |name: &str| -> String {
-        let mut candidates: Vec<std::path::PathBuf> = Vec::new();
-        candidates.push(std::path::PathBuf::from("resources/models").join(name));
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(parent) = exe.parent() {
-                candidates.push(parent.join("resources/models").join(name));
-            }
-        }
-        candidates.push(std::path::PathBuf::from("/Applications/PhotoFinder Next.app/Contents/Resources/models").join(name));
-        candidates.push(std::path::PathBuf::from("/Users/mac/Library/Caches/PhotoFinder/models").join(name));
-        candidates.push(std::path::PathBuf::from("/Users/mac/ai-project/photofinder-ai/src-tauri/resources/models").join(name));
-        for candidate in &candidates {
-            if candidate.exists() {
-                return candidate.to_string_lossy().to_string();
-            }
-        }
-        format!("resources/models/{}", name)
+        crate::core::models::find_model_path(name).to_string_lossy().to_string()
     };
 
     let scrfd_path = find_model("scrfd_500m_bnkps.onnx");
