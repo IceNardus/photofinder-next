@@ -10,6 +10,7 @@ pub mod processing;
 pub mod clustering;
 pub mod image_filter;
 pub mod features;
+pub mod models;
 pub mod feature_extractor;
 pub mod geometry;
 

@@ -314,7 +314,7 @@ async function updateScanProgress() {
       const detailInfo = [faceInfo, objInfo].filter(Boolean).join(", ");
       if (progressTasks) progressTasks.textContent = detailInfo ? `检测: ${detailInfo}` : `待处理: ${status.pending_tasks} 个任务`;
       if (status.current_file && progressTasks) {
-        const fileName = status.current_file.split("/").pop() || status.current_file;
+        const fileName = status.current_file.replace(/\\/g, '/').split("/").pop() || status.current_file;
         progressTasks.textContent += ` | ${fileName}`;
       }
     } else if (!status.is_scanning && progressTitle) {
@@ -549,7 +549,7 @@ async function renderResultsPage() {
   for (let i = 0; i < pageResults.length; i++) {
     const r = pageResults[i];
     const globalIdx = startIdx + i;
-    const filename = r.thumbnail_path ? r.thumbnail_path.split('/').pop() || 'unknown' : 'unknown';
+    const filename = r.thumbnail_path ? r.thumbnail_path.replace(/\\/g, '/').split('/').pop() || 'unknown' : 'unknown';
     const displayName = filename.length > 20 ? filename.slice(0, 17) + '...' : filename;
     const isSelected = selectedResults.has(globalIdx);
 
@@ -1096,7 +1096,7 @@ async function renderObjectResultsPage() {
   for (let i = 0; i < pageResults.length; i++) {
     const r = pageResults[i];
     const globalIdx = startIdx + i;
-    const displayName = r.image_name || (r.image_path ? r.image_path.split('/').pop() : `Image #${r.image_id}`);
+    const displayName = r.image_name || (r.image_path ? r.image_path.replace(/\\/g, '/').split('/').pop() : `Image #${r.image_id}`);
     const truncatedName = displayName.length > 20 ? displayName.slice(0, 17) + '...' : displayName;
     const similarity = r.similarity || r.confidence || 0;
 

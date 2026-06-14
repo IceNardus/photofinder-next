@@ -56,7 +56,14 @@ impl ProcessingService {
     pub async fn initialize(&self) -> Result<()> {
         info!("Initializing ProcessingService AI models...");
 
-        let models_dir = self.find_models_dir();
+        let models_dir = match crate::core::models::find_models_dir() {
+            Some(dir) => dir,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Models directory not found. Tried: exe path, data dir, and CWD"
+                ));
+            }
+        };
 
         let scrfd_path = models_dir.join("scrfd_500m_bnkps.onnx");
         let arcface_path = models_dir.join("w600k_r50.onnx");
@@ -124,41 +131,8 @@ let pipeline = FacePipeline::with_debug(detector, aligner, arcface, &debug_dir);
         Ok(())
     }
 
-    fn find_models_dir(&self) -> std::path::PathBuf {
-        // Use CARGO_MANIFEST_DIR which is evaluated at compile time
-        // This ensures the path works both in development and after bundling
-        let project_models = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources/models");
-
-        if project_models.exists() && project_models.join("scrfd_500m_bnkps.onnx").exists() {
-            info!("Found models at: {}", project_models.display());
-            return project_models;
-        }
-
-        let fallback = self.data_dir.join("resources").join("models");
-        info!("Using fallback models dir: {}", fallback.display());
-        fallback
-    }
-
     fn find_model_path(&self, model_name: &str) -> std::path::PathBuf {
-        let candidates = vec![
-            self.data_dir.join("resources").join("models").join(model_name),
-            std::path::PathBuf::from("resources/models").join(model_name),
-            std::path::PathBuf::from("/Applications/PhotoFinder Next.app/Contents/Resources/models").join(model_name),
-            std::path::PathBuf::from("/Users/mac/Library/Caches/PhotoFinder/models").join(model_name),
-            std::path::PathBuf::from("/Users/mac/ai-project/photofinder-ai/src-tauri/resources/models").join(model_name),
-            std::path::PathBuf::from("/Users/mac/ai-project/photofinder-next/src-tauri/resources/models").join(model_name),
-        ];
-
-        for candidate in &candidates {
-            if candidate.exists() {
-                info!("Found {} at: {}", model_name, candidate.to_string_lossy());
-                return candidate.clone();
-            }
-        }
-
-        warn!("Model {} not found, tried: {:?}", model_name, candidates);
-        candidates[0].clone()
+        crate::core::models::find_model_path(model_name)
     }
 
     pub async fn start(&self) {
@@ -220,7 +194,7 @@ let pipeline = FacePipeline::with_debug(detector, aligner, arcface, &debug_dir);
             stats.current_faces = 0;
             stats.current_patches = 0;
             stats.current_objects = 0;
-            stats.log_message = format!("扫描: {}", image.path.split('/').next_back().unwrap_or(&image.path));
+            stats.log_message = format!("扫描: {}", std::path::Path::new(&image.path).file_name().and_then(|s| s.to_str()).unwrap_or(&image.path));
         }
 
         // Skip non-photo images using ImageTypeClassifier
@@ -238,7 +212,7 @@ let pipeline = FacePipeline::with_debug(detector, aligner, arcface, &debug_dir);
 
         // Final log message with all counts
         let final_stats = self.processing_stats.read().await;
-        let filename = image.path.split('/').next_back().unwrap_or(&image.path).to_string();
+        let filename = std::path::Path::new(&image.path).file_name().and_then(|s| s.to_str()).unwrap_or(&image.path).to_string();
         let completion_msg = format!("完成: {} | 人脸{} 物品{}", filename, final_stats.current_faces, final_stats.current_objects);
         drop(final_stats);  // Release read lock before write
         {

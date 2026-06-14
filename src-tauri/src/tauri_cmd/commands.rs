@@ -394,7 +394,7 @@ pub async fn get_scan_status(state: State<'_, AppState>) -> Result<ScanStatus, S
 
     // Use current_image from processing_stats if available (background processing)
     let current_file = if !proc_stats.current_image.is_empty() {
-        proc_stats.current_image.split('/').next_back()
+        std::path::Path::new(&proc_stats.current_image).file_name().and_then(|s| s.to_str())
             .unwrap_or(&proc_stats.current_image).to_string()
     } else {
         scan_stats.current_file.clone()
@@ -483,22 +483,7 @@ pub async fn test_face_pipeline(image_path: String) -> Result<FacePipelineResult
     use crate::ai::face::{FacePipeline, FaceDetector, FaceAligner, ArcFace};
 
     let find_model = |name: &str| -> String {
-        let mut candidates: Vec<std::path::PathBuf> = Vec::new();
-        candidates.push(std::path::PathBuf::from("resources/models").join(name));
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(parent) = exe.parent() {
-                candidates.push(parent.join("resources/models").join(name));
-            }
-        }
-        candidates.push(std::path::PathBuf::from("/Applications/PhotoFinder Next.app/Contents/Resources/models").join(name));
-        candidates.push(std::path::PathBuf::from("/Users/mac/Library/Caches/PhotoFinder/models").join(name));
-        candidates.push(std::path::PathBuf::from("/Users/mac/ai-project/photofinder-ai/src-tauri/resources/models").join(name));
-        for candidate in &candidates {
-            if candidate.exists() {
-                return candidate.to_string_lossy().to_string();
-            }
-        }
-        format!("resources/models/{}", name)
+        crate::core::models::find_model_path(name).to_string_lossy().to_string()
     };
 
     let scrfd_path = find_model("scrfd_500m_bnkps.onnx");
@@ -511,7 +496,10 @@ pub async fn test_face_pipeline(image_path: String) -> Result<FacePipelineResult
     let aligner = FaceAligner::new();
     let arcface = ArcFace::new(&arcface_path).map_err(|e| e.to_string())?;
 
-    let debug_dir = std::path::PathBuf::from("/Users/mac/Library/Application Support/PhotoFinderNext/debug");
+    let debug_dir = dirs::data_local_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("PhotoFinderNext")
+        .join("debug");
     let pipeline = FacePipeline::with_debug(detector, aligner, arcface, &debug_dir);
 
     let features = pipeline.process_image(&image_path).map_err(|e| e.to_string())?;
@@ -548,22 +536,7 @@ pub async fn test_face_similarity(image1_path: String, image2_path: String) -> R
     use crate::ai::face::{FacePipeline, FaceDetector, FaceAligner, ArcFace};
 
     let find_model = |name: &str| -> String {
-        let mut candidates: Vec<std::path::PathBuf> = Vec::new();
-        candidates.push(std::path::PathBuf::from("resources/models").join(name));
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(parent) = exe.parent() {
-                candidates.push(parent.join("resources/models").join(name));
-            }
-        }
-        candidates.push(std::path::PathBuf::from("/Applications/PhotoFinder Next.app/Contents/Resources/models").join(name));
-        candidates.push(std::path::PathBuf::from("/Users/mac/Library/Caches/PhotoFinder/models").join(name));
-        candidates.push(std::path::PathBuf::from("/Users/mac/ai-project/photofinder-ai/src-tauri/resources/models").join(name));
-        for candidate in &candidates {
-            if candidate.exists() {
-                return candidate.to_string_lossy().to_string();
-            }
-        }
-        format!("resources/models/{}", name)
+        crate::core::models::find_model_path(name).to_string_lossy().to_string()
     };
 
     let scrfd_path = find_model("scrfd_500m_bnkps.onnx");
@@ -573,7 +546,10 @@ pub async fn test_face_similarity(image1_path: String, image2_path: String) -> R
     let aligner = FaceAligner::new();
     let arcface = ArcFace::new(&arcface_path).map_err(|e| e.to_string())?;
 
-    let debug_dir = std::path::PathBuf::from("/Users/mac/Library/Application Support/PhotoFinderNext/debug");
+    let debug_dir = dirs::data_local_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("PhotoFinderNext")
+        .join("debug");
     let pipeline = FacePipeline::with_debug(detector, aligner, arcface, &debug_dir);
 
     let features1 = pipeline.process_image(&image1_path).map_err(|e| e.to_string())?;
@@ -1055,8 +1031,11 @@ pub struct ObjectSearchResultResponse {
 pub async fn init_object_search(state: State<'_, AppState>) -> Result<String, String> {
     use crate::search::object_search::ObjectSearch;
 
-    // Model directory in current project
-    let models_dir = std::path::PathBuf::from("/Users/mac/ai-project/photofinder-next/src-tauri/resources/models");
+    // Find models directory using cross-platform resolver
+    let models_dir = match crate::core::models::find_models_dir() {
+        Some(dir) => dir,
+        None => return Err("Models directory not found. Please ensure models are installed.".to_string()),
+    };
 
     if !models_dir.exists() {
         return Err(format!("Models directory not found: {}", models_dir.display()));
@@ -1112,7 +1091,11 @@ async fn get_or_init_object_search(state: &State<'_, AppState>) -> Result<Arc<Ob
     info!("[OBJECT_SEARCH] Auto-initializing ObjectSearch...");
     use crate::search::object_search::ObjectSearch;
 
-    let models_dir = std::path::PathBuf::from("/Users/mac/ai-project/photofinder-next/src-tauri/resources/models");
+    let models_dir = match crate::core::models::find_models_dir() {
+        Some(dir) => dir,
+        None => return Err("Models directory not found. Please ensure models are installed.".to_string()),
+    };
+
     if !models_dir.exists() {
         return Err(format!("Models directory not found: {}", models_dir.display()));
     }
