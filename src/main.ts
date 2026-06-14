@@ -448,6 +448,7 @@ btnPersonClear.addEventListener("click", () => {
   personResults.innerHTML = "";
   selectedResults.clear();
   currentSearchResults = [];
+  personFileInput.value = ''; // Reset file input so same file can be re-selected
   document.getElementById("person-export-controls")!.style.display = 'none';
   document.getElementById("person-pagination")!.innerHTML = '';
 });

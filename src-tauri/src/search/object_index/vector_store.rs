@@ -32,12 +32,12 @@ pub struct VectorStore {
 
 impl VectorStore {
     pub fn new(data_dir: &Path) -> Result<Self> {
-        let data_path = data_dir.join("vectors").join("object_vectors.bin");
-        let meta_path = data_dir.join("vectors").join("object_vectors.meta");
-        let index_path = data_dir.join("vectors").join("object_index.bin");
+        let data_path = data_dir.join("object_vectors.bin");
+        let meta_path = data_dir.join("object_vectors.meta");
+        let index_path = data_dir.join("object_index.bin");
 
-        // Create vectors directory
-        std::fs::create_dir_all(data_dir.join("vectors"))?;
+        // Create data directory
+        std::fs::create_dir_all(data_dir)?;
 
         let count = if data_path.exists() {
             let metadata = std::fs::metadata(&data_path)?;

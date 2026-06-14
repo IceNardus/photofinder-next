@@ -572,9 +572,9 @@ impl ObjectSearch {
         // Sort by confidence and return top_k
         final_results.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
 
-        // Filter: confidence >= 0.5
-        let min_confidence = 0.5;
-        final_results.retain(|r| r.confidence >= min_confidence);
+        // Filter: embedding_score (similarity) >= 0.5 and confidence >= 0.5
+        let min_score = 0.5;
+        final_results.retain(|r| r.embedding_score >= min_score && r.confidence >= min_score);
 
         // Deduplicate by image_path (keep highest confidence for each image)
         let mut seen_paths: std::collections::HashMap<String, usize> = std::collections::HashMap::new();

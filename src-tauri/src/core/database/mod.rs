@@ -165,7 +165,6 @@ impl Database {
         conn.execute_batch(r#"
             DELETE FROM patch_vectors;
             DELETE FROM patch_features;
-            DELETE FROM objects;
             DELETE FROM faces;
             DELETE FROM scan_tasks;
             DELETE FROM duplicate_groups;

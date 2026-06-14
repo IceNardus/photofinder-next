@@ -237,39 +237,29 @@ pub async fn clear_database(state: State<'_, AppState>) -> Result<ClearDatabaseR
         }
     }
 
-    // Clear all files in vectors directory
+    // Clear all files in vectors directory recursively
     let vectors_dir = data_dir.join("vectors");
     if vectors_dir.exists() {
-        match std::fs::read_dir(&vectors_dir) {
-            Ok(entries) => {
-                for entry in entries.flatten() {
-                    if entry.file_type().map(|ft| ft.is_file()).unwrap_or(false) {
-                        if let Err(e) = std::fs::remove_file(entry.path()) {
-                            let msg = format!("Failed to delete {:?}: {}", entry.path(), e);
-                            eprintln!("[CLEAR] {}", msg);
-                            result.errors.push(msg);
-                        }
-                    }
-                }
+        match std::fs::remove_dir_all(&vectors_dir) {
+            Ok(()) => {
                 result.cleared_vectors = true;
-                info!("[CLEAR] Vectors directory cleared");
+                info!("[CLEAR] Vectors directory deleted");
             }
             Err(e) => {
-                let msg = format!("Failed to read vectors dir: {}", e);
+                let msg = format!("Failed to delete vectors dir: {}", e);
                 eprintln!("[CLEAR] {}", msg);
                 result.errors.push(msg);
             }
         }
     }
 
-    // Clear person cluster index
-    let person_index_path = vectors_dir.join("person_cluster.bin");
-    if person_index_path.exists() {
-        if let Err(e) = std::fs::remove_file(&person_index_path) {
-            eprintln!("[CLEAR] Failed to delete person_cluster.bin: {}", e);
-        } else {
-            info!("[CLEAR] person_cluster.bin deleted");
-        }
+    // Re-create empty vectors directory for future indexing
+    let _ = std::fs::create_dir_all(&vectors_dir);
+
+    // Clear patch HNSW index
+    let index_dir = data_dir.join("index");
+    if index_dir.exists() {
+        let _ = std::fs::remove_dir_all(&index_dir);
     }
 
     // Clear debug directory
@@ -389,8 +379,8 @@ pub async fn get_scan_status(state: State<'_, AppState>) -> Result<ScanStatus, S
     let scan_stats = state.last_scan_stats.read().await;
     let proc_stats = state.processing_stats.read().await;
 
-    // Show scanning if folder scan is active OR there are pending tasks being processed
-    let is_scanning = folder_scanning || pending_tasks > 0;
+    // Only reflect explicit folder scan, not background processing
+    let is_scanning = folder_scanning;
 
     // Use current_image from processing_stats if available (background processing)
     let current_file = if !proc_stats.current_image.is_empty() {
